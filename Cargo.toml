@@ -3,5 +3,9 @@ name = "january"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "january"
+path = "main.rs"
+
 [dependencies]
 libc = "0.2.189"

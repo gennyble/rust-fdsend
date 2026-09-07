@@ -31,6 +31,9 @@ const MSGDATA: &'static str = "msgdata";
 const MSGDATA_LEN: usize = MSGDATA.len();
 
 fn send() -> ! {
+    // Remove the socket file if it exists.
+    std::fs::remove_file(SOCKET_PATH).ok();
+
     // Open a Unix Socket (AF_UNIX) where we will send the fd
     let us = UnixListener::bind(SOCKET_PATH).unwrap();
     println!("[SEND] Opened UnixSocket for recv");
