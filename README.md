@@ -1,6 +1,7 @@
 Attempting to send File Descriptors over Unix Sockets in Rust.
 
-References [this gist from domfarolino](https://gist.github.com/domfarolino/4293951bd95082125f2b9931cab1de40)
+References [this gist from domfarolino](https://gist.github.com/domfarolino/4293951bd95082125f2b9931cab1de40)  
+It is entirely recommended reading. The explanation of what's happening is quite good!
 
 ---
 
