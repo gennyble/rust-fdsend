@@ -31,6 +31,7 @@ const MSGDATA: &'static str = "msgdata";
 const MSGDATA_LEN: usize = MSGDATA.len();
 
 fn send() -> ! {
+    // Open a Unix Socket (AF_UNIX) where we will send the fd
     let us = UnixListener::bind(SOCKET_PATH).unwrap();
     println!("[SEND] Opened UnixSocket for recv");
 
@@ -40,11 +41,13 @@ fn send() -> ! {
     let mut child = cmd.spawn().unwrap();
     println!("[SEND] Launched child binary");
 
+    // Open our testfile and read the first three bytes. This is the fd we will send
     let mut file = File::open("testfile").unwrap();
     let mut read_msg = String::from("[SEND] Read from file: ");
     read_three_from_file(&mut file, &mut read_msg);
     println!("{read_msg}");
 
+    // Grab the raw file descriptor (and store the length of the type for later)
     let file_fd = file.into_raw_fd();
     let file_fd_len = std::mem::size_of_val(&file_fd) as c_uint;
 
@@ -52,6 +55,7 @@ fn send() -> ! {
         iov_base: MSGDATA.as_ptr() as *mut c_void,
         iov_len: MSGDATA_LEN,
     };
+
     let cmsg_len = unsafe { libc::CMSG_SPACE(file_fd_len) };
     let mut buffer = vec![0; cmsg_len as usize];
 
@@ -73,7 +77,9 @@ fn send() -> ! {
         (*cmsg).cmsg_type = libc::SCM_RIGHTS;
         (*cmsg).cmsg_len = libc::CMSG_LEN(file_fd_len);
         let cmsg_data = libc::CMSG_DATA(cmsg) as *mut i32;
-        *cmsg_data = file_fd;
+
+        let cmsg_slice = std::slice::from_raw_parts_mut(cmsg_data, 1);
+        cmsg_slice[0] = file_fd;
     }
 
     let (client, _) = us.accept().unwrap();
@@ -139,7 +145,8 @@ fn recv() -> ! {
 
     let cmsg = unsafe { libc::CMSG_FIRSTHDR(&mut msg) };
     let cmsg_data = unsafe { libc::CMSG_DATA(cmsg) as *mut i32 };
-    let recv_fd = unsafe { *cmsg_data };
+    let cmsg_slice = unsafe { std::slice::from_raw_parts(cmsg_data, 1) };
+    let recv_fd = cmsg_slice[0];
     println!("[RECV] Received file descriptor: {recv_fd}");
 
     let mut file = unsafe { File::from_raw_fd(recv_fd) };
